@@ -197,7 +197,7 @@ public class RCTAes extends ReactContextBaseJavaModule {
 
     final static IvParameterSpec emptyIvSpec = new IvParameterSpec(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
 
-    private static String encrypt(String text, String hexKey, String hexIv) throws Exception {
+    private static String encrypt(String hexData, String hexKey, String hexIv) throws Exception {
         if (text == null || text.length() == 0) {
             return null;
         }
@@ -207,7 +207,7 @@ public class RCTAes extends ReactContextBaseJavaModule {
 
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
-        byte[] encrypted = cipher.doFinal(Base64.decode(text, Base64.NO_WRAP));
+        byte[] encrypted = cipher.doFinal(Hex.decode(hexData));
         return Base64.encodeToString(encrypted, Base64.NO_WRAP);
     }
 
@@ -222,7 +222,7 @@ public class RCTAes extends ReactContextBaseJavaModule {
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
         byte[] decrypted = cipher.doFinal(Base64.decode(ciphertext, Base64.NO_WRAP));
-        return new String(decrypted, "UTF-8");
+        return bytesToHex(decrypted);
     }
 
 }
