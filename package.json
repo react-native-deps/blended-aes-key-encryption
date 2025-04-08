@@ -1,5 +1,5 @@
 {
-    "name": "react-native-aes-crypto",
+    "name": "@react-native-deps/blended-aes-key-encryption",
     "version": "2.1.1",
     "description": "AES crypto native module for react-native",
     "main": "index.js",
@@ -29,7 +29,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git://github.com/tectiv3/react-native-aes.git"
+        "url": "https://github.com/react-native-deps/blended-aes-key-encryption.git"
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
