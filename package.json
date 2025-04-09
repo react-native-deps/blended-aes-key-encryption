@@ -1,5 +1,5 @@
 {
-    "name": "@react-native-deps/blended-aes-key-encryption",
+    "name": "blended-aes-key-encryption",
     "version": "2.1.1",
     "description": "AES crypto native module for react-native",
     "main": "index.js",
@@ -24,9 +24,6 @@
         "uuid"
     ],
     "homepage": "https://github.com/tectiv3/react-native-aes",
-    "imports": {
-        "blended-aes-key-encryption": "@react-native-deps/blended-aes-key-encryption"
-    },
     "bugs": {
         "url": "https://github.com/tectiv3/react-native-aes/issues"
     },
