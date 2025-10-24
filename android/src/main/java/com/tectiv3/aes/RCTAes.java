@@ -19,6 +19,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.Mac;
@@ -40,7 +41,7 @@ import com.facebook.react.bridge.Callback;
 
 public class RCTAes extends ReactContextBaseJavaModule {
 
-    private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS7Padding";
+    private static final String CIPHER_ALGORITHM = "AES/GCM/NoPadding";
     public static final String HMAC_SHA_256 = "HmacSHA256";
     public static final String HMAC_SHA_512 = "HmacSHA512";
     private static final String KEY_ALGORITHM = "AES";
@@ -195,7 +196,8 @@ public class RCTAes extends ReactContextBaseJavaModule {
         return bytesToHex(sha_HMAC.doFinal(contentData));
     }
 
-    final static IvParameterSpec emptyIvSpec = new IvParameterSpec(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    // GCM mode uses a 12-byte IV; change the default accordingly
+    final static byte[] EMPTY_IV = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
     private static String encrypt(String hexData, String hexKey, String hexIv) throws Exception {
         if (hexData == null || hexData.length() == 0) {
@@ -206,7 +208,11 @@ public class RCTAes extends ReactContextBaseJavaModule {
         SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
 
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
+        byte[] iv = hexIv == null ? EMPTY_IV : Hex.decode(hexIv);
+        // GCM mode expects a 12-byte IV; add check
+        if (iv.length != 12) throw new IllegalArgumentException("IV for AES-GCM must be 12 bytes");
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128-bit authentication tag
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmSpec);
         byte[] encrypted = cipher.doFinal(Hex.decode(hexData));
         return Base64.encodeToString(encrypted, Base64.NO_WRAP);
     }
@@ -220,7 +226,10 @@ public class RCTAes extends ReactContextBaseJavaModule {
         SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
 
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
+        byte[] iv = hexIv == null ? EMPTY_IV : Hex.decode(hexIv);
+        if (iv.length != 12) throw new IllegalArgumentException("IV for AES-GCM must be 12 bytes");
+        GCMParameterSpec gcmSpec = new GCMParameterSpec(128, iv); // 128-bit authentication tag
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmSpec);
         byte[] decrypted = cipher.doFinal(Base64.decode(ciphertext, Base64.NO_WRAP));
         return bytesToHex(decrypted);
     }
