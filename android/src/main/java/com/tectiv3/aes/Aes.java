@@ -38,20 +38,20 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 
-public class RCTAes extends ReactContextBaseJavaModule {
+public class Aes extends ReactContextBaseJavaModule {
 
     private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS7Padding";
     public static final String HMAC_SHA_256 = "HmacSHA256";
     public static final String HMAC_SHA_512 = "HmacSHA512";
     private static final String KEY_ALGORITHM = "AES";
 
-    public RCTAes(ReactApplicationContext reactContext) {
+    public Aes(ReactApplicationContext reactContext) {
         super(reactContext);
     }
 
     @Override
     public String getName() {
-        return "RCTAes";
+        return "Aes";
     }
 
     @ReactMethod
