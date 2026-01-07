@@ -10,6 +10,7 @@
 #import <CommonCrypto/CommonKeyDerivation.h>
 
 #import "AesCrypt.h"
+#import "react_native_aes-Swift.h"
 
 @implementation AesCrypt
 
@@ -39,27 +40,27 @@
     // Data of String to generate Hash key(hexa decimal string).
     NSData *passwordData = [password dataUsingEncoding:NSUTF8StringEncoding];
     NSData *saltData = [salt dataUsingEncoding:NSUTF8StringEncoding];
-
+    
     // Hash key (hexa decimal) string data length.
     NSMutableData *hashKeyData = [NSMutableData dataWithLength:length/8];
-
+    
     // Key Derivation using PBKDF2 algorithm.
     int status = CCKeyDerivationPBKDF(
-                    kCCPBKDF2,
-                    passwordData.bytes,
-                    passwordData.length,
-                    saltData.bytes,
-                    saltData.length,
-                    kCCPRFHmacAlgSHA512,
-                    cost,
-                    hashKeyData.mutableBytes,
-                    hashKeyData.length);
-
+                                      kCCPBKDF2,
+                                      passwordData.bytes,
+                                      passwordData.length,
+                                      saltData.bytes,
+                                      saltData.length,
+                                      kCCPRFHmacAlgSHA512,
+                                      cost,
+                                      hashKeyData.mutableBytes,
+                                      hashKeyData.length);
+    
     if (status == kCCParamError) {
         NSLog(@"Key derivation error");
         return @"";
     }
-
+    
     return [self toHex:hashKeyData];
 }
 
@@ -68,7 +69,7 @@
     NSData *keyData = [self fromHex:key];
     NSData *ivData = [self fromHex:iv];
     size_t numBytes = 0;
-
+    
     NSArray *aesAlgorithms = @[@"aes-128-cbc", @"aes-192-cbc", @"aes-256-cbc"];
     size_t item = [aesAlgorithms indexOfObject:algorithm];
     size_t keyLength;
@@ -83,9 +84,9 @@
             keyLength = kCCKeySizeAES256;
             break;
     }
-
+    
     NSMutableData * buffer = [[NSMutableData alloc] initWithLength:[data length] + kCCBlockSizeAES128];
-
+    
     CCCryptorStatus cryptStatus = CCCrypt(
                                           [operation isEqualToString:@"encrypt"] ? kCCEncrypt : kCCDecrypt,
                                           kCCAlgorithmAES,
@@ -95,7 +96,7 @@
                                           data.bytes, data.length,
                                           buffer.mutableBytes,  buffer.length,
                                           &numBytes);
-
+    
     if (cryptStatus == kCCSuccess) {
         [buffer setLength:numBytes];
         return buffer;
@@ -104,16 +105,14 @@
     return nil;
 }
 
-+ (NSString *) encrypt: (NSString *)clearText key: (NSString *)key iv: (NSString *)iv algorithm: (NSString *)algorithm {
-    NSData *inputData = [self fromHex:clearText];
-    NSData *result = [self AESCBC:@"encrypt" data:inputData key:key iv:iv algorithm:algorithm];
-    return [result base64EncodedStringWithOptions:0];
++ (NSString *) encrypt: (NSString *)clearText key: (NSString *)key {
+    NSString *result = [AesGCM encryptWithHexString:clearText hexKey:key error:nil];
+    return result;
 }
 
-+ (NSString *)decrypt:(NSString *)cipherText key:(NSString *)key iv:(NSString *)iv algorithm:(NSString *)algorithm {
-    NSData *result = [self AESCBC:@"decrypt" data:[[NSData alloc] initWithBase64EncodedString:cipherText options:0] key:key iv:iv algorithm:algorithm];
-    NSString *hexResult = [self toHex:result];
-    return hexResult;
++ (NSString *)decrypt:(NSString *)cipherText key:(NSString *)key {
+    NSString *result = [AesGCM decryptWithCiphertextBase64:cipherText keyBase64:key error:nil];
+    return result;
 }
 
 + (NSString *) hmac256: (NSString *)input key: (NSString *)key {
@@ -158,7 +157,7 @@
 }
 
 + (NSString *) randomUuid {
-  return [[NSUUID UUID] UUIDString];
+    return [[NSUUID UUID] UUIDString];
 }
 
 + (NSString *) randomKey: (NSInteger)length {
