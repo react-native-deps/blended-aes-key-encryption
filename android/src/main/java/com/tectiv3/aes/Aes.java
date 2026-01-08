@@ -4,7 +4,6 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
