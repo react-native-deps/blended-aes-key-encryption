@@ -54,7 +54,8 @@
                                       kCCPRFHmacAlgSHA512,
                                       cost,
                                       hashKeyData.mutableBytes,
-                                      hashKeyData.length);
+                                      hashKeyData.length
+                                      );
     
     if (status == kCCParamError) {
         NSLog(@"Key derivation error");
@@ -106,12 +107,12 @@
 }
 
 + (NSString *) encrypt: (NSString *)clearText key: (NSString *)key {
-    NSString *result = [AesGCM encryptWithHexString:clearText hexKey:key error:nil];
+    NSString *result = [AesGCM encryptWithHexString:clearText hexKey:key];
     return result;
 }
 
 + (NSString *)decrypt:(NSString *)cipherText key:(NSString *)key {
-    NSString *result = [AesGCM decryptWithCiphertextBase64:cipherText keyBase64:key error:nil];
+    NSString *result = [AesGCM decryptWithCiphertextBase64:cipherText hexKey:key];
     return result;
 }
 
