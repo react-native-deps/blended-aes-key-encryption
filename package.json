@@ -33,6 +33,6 @@
     },
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "pack": "npm pack --pack-destination ~/packages/ "
+        "pack-to-home": "npm pack --pack-destination ~/packages/ "
     }
 }
