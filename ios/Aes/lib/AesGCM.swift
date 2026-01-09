@@ -20,19 +20,20 @@ public class AesGCM: NSObject {
     guard let text = hexToBytes(hexString) else {
       return nil
     }
-
-    guard let keyData = hexToBytes(hexKey) else { return nil }
+    guard let keyData = hexToBytes(hexKey) else {
+      return nil
+    }
 
     let key = SymmetricKey(data: keyData)
     do {
       let sealedBox = try AES.GCM.seal(text, using: key)
 
-      var combined = Data()
-      combined.append(sealedBox.ciphertext)
-      combined.append(sealedBox.tag)
+      guard let combined = sealedBox.combined else{
+          return nil
+      }
 
-      return "\(Data(sealedBox.nonce).base64EncodedString()):\(combined.base64EncodedString())"
-        as NSString
+      return Data(combined).base64EncodedString()
+            as NSString
     } catch {
       //print("Encryption failed: \(error.localizedDescription)")
       return nil
@@ -47,17 +48,17 @@ public class AesGCM: NSObject {
     guard let keyData = hexToBytes(hexKey) else {
       return nil
     }
-    let cipherData = ciphertextBase64.split(separator: ":")
-      guard let ivData = Data(base64Encoded: String(cipherData[0])) else { return nil }
-    guard let combinedData = Data(base64Encoded: String(cipherData[1])) else {
+
+    guard let combinedData = Data(base64Encoded: String(ciphertextBase64)) else {
       return nil
     }
-    let cipherText = combinedData.prefix(combinedData.count - 16)
 
-    let tagData = combinedData.suffix(16)
-
+    let ivData = combinedData.prefix(12)
+    let cipherAndTag = combinedData.dropFirst(12)
+    let cipherText = cipherAndTag.dropLast(16)
+    let tagData = cipherAndTag.suffix(16)
     let key = SymmetricKey(data: keyData)
- 
+
     do {
       let nonce = try AES.GCM.Nonce(data: ivData)
       let box = try AES.GCM.SealedBox(

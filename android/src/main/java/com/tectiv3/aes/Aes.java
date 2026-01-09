@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import java.util.UUID;
+import java.nio.ByteBuffer;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -216,9 +217,12 @@ public class Aes extends ReactContextBaseJavaModule {
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmParameterSpec);
         byte[] encrypted = cipher.doFinal(Hex.decode(hexData));
-        String encryptedText = Base64.encodeToString(encrypted, Base64.NO_WRAP);
-        String base64Nonce = Base64.encodeToString(nonce, Base64.NO_WRAP);
-        return base64Nonce + ":" + encryptedText;
+
+        ByteBuffer buffer = ByteBuffer.allocate(nonce.length + encrypted.length);
+        buffer.put(nonce);
+        buffer.put(encrypted);
+
+        return Base64.encodeToString(buffer.array(), Base64.NO_WRAP);   
     }
 
     private static String decrypt(String ciphertext, String hexKey) throws Exception {
@@ -226,17 +230,23 @@ public class Aes extends ReactContextBaseJavaModule {
             return null;
         }
 
-        String[] cipherData = ciphertext.split(":");
+        byte[] combined = Base64.decode(ciphertext, Base64.NO_WRAP); 
+        ByteBuffer buffer = ByteBuffer.wrap(combined);
+
+        byte[] nonce = new byte[12];
+        buffer.get(nonce);
+
+        byte[] encryptedText = new byte[buffer.remaining()];
+        buffer.get(encryptedText);
 
         byte[] key = Hex.decode(hexKey);
         SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
 
-        byte[] nonce = Base64.decode(cipherData[0], Base64.NO_WRAP);
         GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BIT, nonce);
         
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmParameterSpec);
-        byte[] decrypted = cipher.doFinal(Base64.decode(cipherData[1], Base64.NO_WRAP));
+        byte[] decrypted = cipher.doFinal(encryptedText);
         return bytesToHex(decrypted);
     }
 
