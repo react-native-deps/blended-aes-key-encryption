@@ -12,6 +12,9 @@ import Foundation
 @objcMembers
 public class AesGCM: NSObject {
 
+    static let GCM_NONCE_LENGTH_BYTE = 12
+    static let GCM_TAG_LENGTH_BYTE = 16
+
   public static func encrypt(
     hexString: String,
     hexKey: String,
@@ -53,10 +56,10 @@ public class AesGCM: NSObject {
       return nil
     }
 
-    let ivData = combinedData.prefix(12)
-    let cipherAndTag = combinedData.dropFirst(12)
-    let cipherText = cipherAndTag.dropLast(16)
-    let tagData = cipherAndTag.suffix(16)
+    let ivData = combinedData.prefix(GCM_NONCE_LENGTH_BYTE)
+    let cipherAndTag = combinedData.dropFirst(GCM_NONCE_LENGTH_BYTE)
+    let cipherText = cipherAndTag.dropLast(GCM_TAG_LENGTH_BYTE)
+    let tagData = cipherAndTag.suffix(GCM_TAG_LENGTH_BYTE)
     let key = SymmetricKey(data: keyData)
 
     do {

@@ -233,7 +233,7 @@ public class Aes extends ReactContextBaseJavaModule {
         byte[] combined = Base64.decode(ciphertext, Base64.NO_WRAP); 
         ByteBuffer buffer = ByteBuffer.wrap(combined);
 
-        byte[] nonce = new byte[12];
+        byte[] nonce = new byte[GCM_NONCE_LENGTH_BYTE];
         buffer.get(nonce);
 
         byte[] encryptedText = new byte[buffer.remaining()];
