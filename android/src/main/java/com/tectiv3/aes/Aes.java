@@ -4,16 +4,17 @@ import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 
 import java.util.UUID;
+import java.nio.ByteBuffer;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.InvalidKeyException;
+import java.security.SecureRandom;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -22,6 +23,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.Mac;
+import javax.crypto.spec.GCMParameterSpec;
 
 import org.spongycastle.crypto.digests.SHA512Digest;
 import org.spongycastle.crypto.generators.PKCS5S2ParametersGenerator;
@@ -40,10 +42,13 @@ import com.facebook.react.bridge.Callback;
 
 public class Aes extends ReactContextBaseJavaModule {
 
-    private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS7Padding";
+    private static final String CIPHER_ALGORITHM = "AES/GCM/NoPadding";
     public static final String HMAC_SHA_256 = "HmacSHA256";
     public static final String HMAC_SHA_512 = "HmacSHA512";
     private static final String KEY_ALGORITHM = "AES";
+
+    private static final int GCM_NONCE_LENGTH_BYTE = 12;
+    private static final int GCM_TAG_LENGTH_BIT = 128;
 
     public Aes(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -55,9 +60,9 @@ public class Aes extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void encrypt(String data, String key, String iv, String algorithm, Promise promise) {
+    public void encrypt(String data, String key, Promise promise) {
         try {
-            String result = encrypt(data, key, iv);
+            String result = encrypt(data, key);
             promise.resolve(result);
         } catch (Exception e) {
             promise.reject("-1", e.getMessage());
@@ -65,9 +70,9 @@ public class Aes extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void decrypt(String data, String pwd, String iv, String algorithm, Promise promise) {
+    public void decrypt(String data, String pwd, Promise promise) {
         try {
-            String strs = decrypt(data, pwd, iv);
+            String strs = decrypt(data, pwd);
             promise.resolve(strs);
         } catch (Exception e) {
             promise.reject("-1", e.getMessage());
@@ -197,7 +202,7 @@ public class Aes extends ReactContextBaseJavaModule {
 
     final static IvParameterSpec emptyIvSpec = new IvParameterSpec(new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
 
-    private static String encrypt(String hexData, String hexKey, String hexIv) throws Exception {
+    private static String encrypt(String hexData, String hexKey) throws Exception {
         if (hexData == null || hexData.length() == 0) {
             return null;
         }
@@ -205,23 +210,43 @@ public class Aes extends ReactContextBaseJavaModule {
         byte[] key = Hex.decode(hexKey);
         SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
 
+        byte[] nonce = new byte[GCM_NONCE_LENGTH_BYTE];
+        new SecureRandom().nextBytes(nonce);
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BIT, nonce);
+
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, gcmParameterSpec);
         byte[] encrypted = cipher.doFinal(Hex.decode(hexData));
-        return Base64.encodeToString(encrypted, Base64.NO_WRAP);
+
+        ByteBuffer buffer = ByteBuffer.allocate(nonce.length + encrypted.length);
+        buffer.put(nonce);
+        buffer.put(encrypted);
+
+        return Base64.encodeToString(buffer.array(), Base64.NO_WRAP);   
     }
 
-    private static String decrypt(String ciphertext, String hexKey, String hexIv) throws Exception {
+    private static String decrypt(String ciphertext, String hexKey) throws Exception {
         if(ciphertext == null || ciphertext.length() == 0) {
             return null;
         }
 
+        byte[] combined = Base64.decode(ciphertext, Base64.NO_WRAP); 
+        ByteBuffer buffer = ByteBuffer.wrap(combined);
+
+        byte[] nonce = new byte[GCM_NONCE_LENGTH_BYTE];
+        buffer.get(nonce);
+
+        byte[] encryptedText = new byte[buffer.remaining()];
+        buffer.get(encryptedText);
+
         byte[] key = Hex.decode(hexKey);
         SecretKey secretKey = new SecretKeySpec(key, KEY_ALGORITHM);
 
+        GCMParameterSpec gcmParameterSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BIT, nonce);
+        
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        cipher.init(Cipher.DECRYPT_MODE, secretKey, hexIv == null ? emptyIvSpec : new IvParameterSpec(Hex.decode(hexIv)));
-        byte[] decrypted = cipher.doFinal(Base64.decode(ciphertext, Base64.NO_WRAP));
+        cipher.init(Cipher.DECRYPT_MODE, secretKey, gcmParameterSpec);
+        byte[] decrypted = cipher.doFinal(encryptedText);
         return bytesToHex(decrypted);
     }
 

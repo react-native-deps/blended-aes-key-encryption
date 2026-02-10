@@ -1,6 +1,6 @@
 {
     "name": "blended-aes-key-encryption",
-    "version": "2.1.2",
+    "version": "2.2.0",
     "description": "AES crypto native module for react-native",
     "main": "index.js",
     "types": "index.d.ts",
@@ -32,6 +32,7 @@
         "url": "https://github.com/react-native-deps/blended-aes-key-encryption.git"
     },
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "pack-to-home": "npm pack --pack-destination ~/packages/ "
     }
 }
