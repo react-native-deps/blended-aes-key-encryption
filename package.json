@@ -1,5 +1,5 @@
 {
-    "name": "blended-aes-key-encryption",
+    "name": "@cognam/blended-aes-key-encryption",
     "version": "2.2.0",
     "description": "AES crypto native module for react-native",
     "main": "index.js",
